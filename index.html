@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Эталон разметки Kivy: InstrScr и его «вырождения»</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100vh;overflow:hidden}
+body{background:#f7f9fc;font-family:'Segoe UI',Tahoma,sans-serif;color:#222;padding:14px}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #d5dce6}
+header h1{font-size:19px;color:#123a63}
+header .sub{font-size:13px;color:#567}
+main{display:flex;gap:16px;height:calc(100vh - 80px)}
+.col{display:flex;flex-direction:column;gap:12px;overflow:hidden}
+#leftCol{width:380px;flex:none}
+#rightCol{flex:1;min-width:320px}
+.card{background:#fff;border:1px solid #d5dce6;border-radius:10px;padding:12px;box-shadow:0 2px 8px #0001;overflow:hidden}
+.card h3{font-size:14px;color:#123a63;margin:0 0 8px}
+.card .hint{font-size:12px;color:#567;line-height:1.5}
+#etWindow{background:#222;border:2px solid #ffd75f;border-radius:8px;color:#fff;min-height:320px;padding:10px;position:relative;box-shadow:0 0 0 3px #ffd75f33,0 8px 22px #0003}
+#etWindow .badge{position:absolute;top:-12px;left:12px;background:#ffd75f;color:#123a63;font:700 11px monospace;padding:2px 10px;border-radius:10px}
+.et-outer{display:flex;flex-direction:column;gap:8px;padding:8px;height:100%}
+.et-instr{background:#3a2a1a;color:#ffd75f;padding:10px;border-radius:6px;text-align:center;font-size:13px;font-family:monospace;transition:all .6s}
+.et-line{display:flex;flex-direction:row;gap:8px;align-items:center;padding:4px;background:#1a2a3a;border:2px dashed #2f7fd6;border-radius:6px;transition:all .6s;position:relative}
+.et-line .tag{position:absolute;top:-10px;left:8px;background:#2f7fd6;color:#fff;font:600 10px monospace;padding:1px 7px;border-radius:8px}
+.et-line .lbl{flex:1;text-align:right;color:#fff;font-family:monospace;font-size:13px;padding:4px}
+.et-line .inp{flex:2;background:#333;border:1px solid #555;color:#fff;border-radius:4px;padding:4px;font-family:monospace;font-size:13px;text-align:center}
+.et-btn{align-self:center;background:#444;color:#fff;border:1px solid #666;border-radius:6px;padding:8px 20px;width:30%;text-align:center;font-family:monospace;font-size:13px;transition:all .6s;position:relative}
+.et-event{position:absolute;right:8px;top:8px;background:#e08a2e;color:#fff;font:600 10px monospace;padding:2px 8px;border-radius:8px;opacity:0;transition:all .6s}
+.et-event.on{opacity:1}
+.et-event-press{position:absolute;right:-5px;bottom:-5px;background:#e08a2e;color:#fff;font:600 9px monospace;padding:1px 6px;border-radius:6px;opacity:0;transition:all .6s}
+.et-event-press.on{opacity:1}
+.gone{opacity:0;transform:scale(.3);pointer-events:none;height:0!important;min-height:0!important;padding:0!important;margin:0!important;border-width:0!important;overflow:hidden}
+.matrix-code-row{display:flex;gap:12px;flex:1;min-height:0}
+.matrix-col{flex:0 0 42%;display:flex;flex-direction:column}
+.code-col{flex:1;display:flex;flex-direction:column;min-width:0}
+table.matrix{width:100%;border-collapse:collapse;font-size:11px;font-family:monospace}
+table.matrix th,table.matrix td{padding:5px 3px;text-align:center;border-bottom:1px solid #e0e6ee}
+table.matrix th{background:#eef2f7;color:#123a63;font-weight:700;font-size:10px}
+table.matrix td:first-child{text-align:left;font-weight:600;color:#333;font-size:10px}
+.yes{color:#2e8b57;font-weight:700}
+.no{color:#c0c0c0}
+.hi{background:#fff7d6}
+.screen-btns{display:flex;flex-wrap:wrap;gap:6px}
+.scr{border:2px solid #b5b5b5;background:linear-gradient(#fdfdfd,#e2e2e2);border-radius:8px;padding:6px 10px;font:600 12px monospace;cursor:pointer;transition:all .2s;flex:1;min-width:100px;text-align:center}
+.scr:hover{background:#fff;transform:translateY(-1px)}
+.scr.active{background:#ffd75f;border-color:#c9a227;color:#123a63;box-shadow:0 0 0 3px #ffd75f44}
+.scr .cnt{display:block;font-size:10px;color:#789;margin-top:2px;font-weight:400}
+.scr.active .cnt{color:#4a3000}
+#explain{background:linear-gradient(#fff7d6,#ffe9a8);border:2px solid #e6a817;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;color:#4a3000;min-height:60px}
+#explain b{color:#123a63}
+#codeBox{background:#232323;color:#ddd;border-radius:8px;padding:10px;font:11px/1.4 monospace;flex:1;overflow:auto;white-space:pre}
+#codeBox .kw{color:#ff9}
+#codeBox .str{color:#9f9}
+#codeBox .cm{color:#888}
+#codeBox .gone-line{opacity:.25;text-decoration:line-through}
+#counter{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:#eef2f7;border:1px solid #d5dce6;border-radius:8px;padding:6px 10px;font:600 12px monospace;color:#123a63;flex:1;text-align:center;min-width:80px}
+.stat b{color:#e08a2e;font-size:16px;display:block}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:#567;margin-top:6px}
+.legend .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
+</style>
+</head>
+<body>
+<header>
+ <h1>🏆 Эталон разметки Kivy: InstrScr</h1>
+ <span class="sub">Самый сложный экран → все остальные получаются из него удалением лишнего</span>
+</header>
+<main>
+ <div class="col" id="leftCol">
+  <div class="card">
+   <h3>🎯 Эталон — InstrScr</h3>
+   <div class="hint">Самый «насыщенный» экран приложения. Содержит <b>все возможные строительные блоки</b>: инструкцию, две горизонтальные строки ввода, кнопку и событие. Остальные экраны — его «вырождения».</div>
+   <div id="etWindow" style="margin-top:10px">
+    <span class="badge">ЭТАЛОН · InstrScr</span>
+    <div class="et-outer" id="etOuter">
+     <div class="et-instr" id="etInstr">Инструкция (Label: txt_instruction)</div>
+     <div class="et-line" id="etLine1">
+      <span class="tag">line1 ↔</span>
+      <div class="lbl" id="etLbl1">Введите имя:</div>
+      <div class="inp" id="etIn1"> </div>
+     </div>
+     <div class="et-line" id="etLine2">
+      <span class="tag">line2 ↔</span>
+      <div class="lbl" id="etLbl2">Введите возраст:</div>
+      <div class="inp" id="etIn2">7</div>
+     </div>
+     <div class="et-btn" id="etBtn">
+      Начать
+      <div class="et-event-press" id="etEventPress">on_press → next()</div>
+     </div>
+    </div>
+    <div class="et-event" id="etEvent">on_enter → before()</div>
+   </div>
+   <div class="legend">
+    <span><span class="dot" style="background:#ffd75f"></span>Label (инструкция)</span>
+    <span><span class="dot" style="background:#2f7fd6"></span>BoxLayout horizontal (строка)</span>
+    <span><span class="dot" style="background:#444"></span>Button</span>
+    <span><span class="dot" style="background:#e08a2e"></span>События</span>
+   </div>
+  </div>
+  <div class="card">
+   <h3>📊 Сложность экрана</h3>
+   <div id="counter">
+    <div class="stat">Виджетов<b id="stW">6</b></div>
+    <div class="stat">Контейнеров<b id="stL">3</b></div>
+    <div class="stat">Событий<b id="stE">1</b></div>
+    <div class="stat">Строк кода<b id="stC">19</b></div>
+   </div>
+  </div>
+ </div>
+ <div class="col" id="rightCol">
+  <div class="card">
+   <h3>🎮 Выберите экран — увидим, что удалено из эталона</h3>
+   <div class="screen-btns">
+    <button class="scr active" data-scr="InstrScr">InstrScr<span class="cnt">эталон · 6 виджетов</span></button>
+    <button class="scr" data-scr="PulseScr">PulseScr<span class="cnt">− line2 · 4 виджета</span></button>
+    <button class="scr" data-scr="CheckSits">CheckSits<span class="cnt">− line1,2 · 2 виджета</span></button>
+    <button class="scr" data-scr="PulseScr2">PulseScr2<span class="cnt">≡ эталон · переименование</span></button>
+    <button class="scr" data-scr="Result">Result<span class="cnt">− всё + on_enter · 1 виджет</span></button>
+   </div>
+  </div>
+  <div class="card">
+   <h3>💬 Что происходит</h3>
+   <div id="explain">Перед вами <b>эталон — InstrScr</b>. Он содержит <b>все строительные блоки</b>: вертикальный контейнер <code>outer</code>, текстовую инструкцию, <b>две</b> горизонтальные строки ввода (каждая — Label + TextInput), кнопку и событие <code>on_press</code>. Кликните на любой экран — и увидите, какие элементы нужно <b>удалить</b> из эталона, чтобы получить его.</div>
+  </div>
+  <div class="card" style="flex:1;display:flex;flex-direction:column;padding:10px">
+   <div class="matrix-code-row">
+    <div class="matrix-col">
+     <h3>📋 Матрица элементов</h3>
+     <table class="matrix" id="matrix">
+      <thead>
+       <tr><th>Элемент</th><th>Instr</th><th>Pulse</th><th>Sits</th><th>P2</th><th>Res</th></tr>
+      </thead>
+      <tbody>
+       <tr data-el="outer"><td>outer (BoxV)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+       <tr data-el="instr"><td>instr (Label)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+       <tr data-el="line1"><td>line1 (L+T)</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td></tr>
+       <tr data-el="line2"><td>line2 (L+T)</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td></tr>
+       <tr data-el="btn"><td>btn (Button)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+       <tr data-el="press"><td>on_press → next()</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+       <tr data-el="enter"><td>on_enter → before()</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="code-col">
+     <h3>🐍 Код эталона (зачёркнуты удалённые строки)</h3>
+     <div id="codeBox"></div>
+    </div>
+   </div>
+  </div>
+ </div>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+
+const SCREENS={
+ InstrScr:{
+  title:'InstrScr — эталон',
+  keep:{outer:1,instr:1,line1:1,line2:1,btn:1,press:1,enter:0},
+  stats:{w:6,l:3,e:1,c:19},
+  explain:'Перед вами <b>эталон — InstrScr</b>. Он содержит <b>все строительные блоки</b>: вертикальный контейнер <code>outer</code>, текстовую инструкцию, <b>две</b> горизонтальные строки ввода (каждая — Label + TextInput), кнопку и событие <code>on_press</code>. Это <b>максимально насыщенный</b> экран — дальше можно только упрощать.'
+ },
+ PulseScr:{
+  title:'PulseScr = InstrScr − line2',
+  keep:{outer:1,instr:1,line1:1,line2:0,btn:1,press:1,enter:0},
+  stats:{w:4,l:2,e:1,c:13},
+  explain:'<b>PulseScr</b> получается из эталона <b>удалением второй строки</b> (<code>line2</code>). Остается одна строка ввода — для результата первого измерения пульса. Событие <code>on_press</code> сохранено — кнопка «Продолжить» ведёт на следующий экран.'
+ },
+ CheckSits:{
+  title:'CheckSits = InstrScr − line1 − line2',
+  keep:{outer:1,instr:1,line1:0,line2:0,btn:1,press:1,enter:0},
+  stats:{w:2,l:1,e:1,c:7},
+  explain:'<b>CheckSits</b> — это эталон, из которого <b>удалены обе строки ввода</b>. Остаются только инструкция и кнопка. Событие <code>on_press</code> сохранено — кнопка «Продолжить» ведёт на следующий экран. Самый «чистый» информационный экран.'
+ },
+ PulseScr2:{
+  title:'PulseScr2 ≡ InstrScr (структурный близнец)',
+  keep:{outer:1,instr:1,line1:1,line2:1,btn:1,press:1,enter:0},
+  stats:{w:6,l:3,e:1,c:19},
+  explain:'<b>PulseScr2</b> — это <b>структурный близнец</b> эталона. Та же самая геометрия: outer + инструкция + две строки + кнопка + событие <code>on_press</code>. Отличаются <i>только имена переменных и тексты</i>. Это показывает, что <b>разметка не зависит от смысла</b>.'
+ },
+ Result:{
+  title:'Result = InstrScr − line1 − line2 − btn − on_press + on_enter',
+  keep:{outer:1,instr:1,line1:0,line2:0,btn:0,press:0,enter:1},
+  stats:{w:1,l:1,e:1,c:8},
+  explain:'<b>Result</b> — самый «обеднённый» по виджетам экран: удалены обе строки, кнопка и её событие <code>on_press</code>. Но зато появилось <b>событие <code>on_enter</code></b>, которое заполняет Label данными при входе на экран. Это показывает важный принцип Kivy: разметка и данные живут раздельно.'
+ }
+};
+
+const CODE_LINES=[
+ {el:'outer',code:'outer = BoxLayout(orientation=\'vertical\', padding=8, spacing=8)'},
+ {el:'instr',code:'instr = Label(text=txt_instruction)'},
+ {el:'line1',code:'line1 = BoxLayout(size_hint=(0.8, None), height=\'30sp\')'},
+ {el:'line1',code:'lbl1 = Label(text=\'Введите имя:\', halign=\'right\')'},
+ {el:'line1',code:'in_name = TextInput(multiline=False)'},
+ {el:'line1',code:'line1.add_widget(lbl1)'},
+ {el:'line1',code:'line1.add_widget(in_name)'},
+ {el:'line2',code:'line2 = BoxLayout(size_hint=(0.8, None), height=\'30sp\')'},
+ {el:'line2',code:'lbl2 = Label(text=\'Введите возраст:\', halign=\'right\')'},
+ {el:'line2',code:'in_age = TextInput(text=\'7\', multiline=False)'},
+ {el:'line2',code:'line2.add_widget(lbl2)'},
+ {el:'line2',code:'line2.add_widget(in_age)'},
+ {el:'btn',code:'btn = Button(text=\'Начать\', size_hint=(0.3, 0.2))'},
+ {el:'press',code:'btn.on_press = self.next'},
+ {el:'outer',code:'outer.add_widget(instr)'},
+ {el:'outer',code:'outer.add_widget(line1)'},
+ {el:'outer',code:'outer.add_widget(line2)'},
+ {el:'outer',code:'outer.add_widget(btn)'},
+ {el:'outer',code:'self.add_widget(outer)'}
+];
+
+function applyScreen(name){
+ const s=SCREENS[name];
+ $$('.scr').forEach(b=>b.classList.toggle('active',b.dataset.scr===name));
+ $('#etInstr').classList.toggle('gone',!s.keep.instr);
+ $('#etLine1').classList.toggle('gone',!s.keep.line1);
+ $('#etLine2').classList.toggle('gone',!s.keep.line2);
+ $('#etBtn').classList.toggle('gone',!s.keep.btn);
+ $('#etEventPress').classList.toggle('on',!!s.keep.press);
+ $('#etEvent').classList.toggle('on',!!s.keep.enter);
+ $('#etWindow .badge').textContent=s.title.toUpperCase().split('—')[0].trim()+(name==='InstrScr'?' · ЭТАЛОН':'');
+ $('#stW').textContent=s.stats.w;
+ $('#stL').textContent=s.stats.l;
+ $('#stE').textContent=s.stats.e;
+ $('#stC').textContent=s.stats.c;
+ $('#explain').innerHTML=s.explain;
+ const cols=['InstrScr','PulseScr','CheckSits','PulseScr2','Result'];
+ const idx=cols.indexOf(name);
+ $$('#matrix th').forEach((th,i)=>th.classList.toggle('hi',i===idx+1));
+ $$('#matrix tbody tr').forEach(tr=>{
+  tr.querySelectorAll('td').forEach((td,i)=>{
+   if(i===0)return;
+   td.classList.toggle('hi',i-1===idx);
+  });
+ });
+ const html=CODE_LINES.map(l=>{
+  const gone=!s.keep[l.el];
+  const c=l.code.replace(/('.*?')/g,'<span class="str">$1</span>')
+                .replace(/\b(BoxLayout|Label|TextInput|Button)\b/g,'<span class="kw">$1</span>');
+  return `<div class="${gone?'gone-line':''}">${c}</div>`;
+ }).join('');
+ $('#codeBox').innerHTML=html;
+}
+
+$$('.scr').forEach(b=>b.addEventListener('click',()=>applyScreen(b.dataset.scr)));
+applyScreen('InstrScr');
+</script>
+</body>
+</html>
